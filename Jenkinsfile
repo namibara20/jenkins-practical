@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -5,43 +6,52 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo 'Checking out project source code'
+                checkout scm
+                echo 'Source code checked out successfully'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'pip3 install -r deployment/requirements.txt'
+                sh '''
+                    python3 -m venv .venv
+                    .venv/bin/python -m pip install -r deployment/requirements.txt
+                '''
             }
         }
 
-        stage('Run Health Check') {
+        stage('Health Check') {
             steps {
                 sh 'bash scripts/health_check.sh'
             }
         }
 
-        stage('Run Unit Tests') {
+        stage('Unit Testing') {
             steps {
-                sh 'python3 -m pytest tests/ -v'
+                sh '.venv/bin/python -m pytest tests/ -v'
             }
         }
 
         stage('Deployment') {
             steps {
-                sh 'mkdir -p deployment/output'
-                echo 'Deployment directory created successfully'
+                sh '''
+                    mkdir -p deployment/output
+
+                    echo "Application deployed successfully" > deployment/output/deployment.txt
+
+                    cat deployment/output/deployment.txt
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'PIPELINE EXECUTED SUCCESSFULLY!'
+            echo 'ALL PIPELINE STAGES COMPLETED SUCCESSFULLY!'
         }
 
         failure {
-            echo 'PIPELINE FAILED!'
+            echo 'PIPELINE FAILED. CHECK CONSOLE OUTPUT.'
         }
     }
 }
